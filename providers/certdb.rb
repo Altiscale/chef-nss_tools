@@ -154,21 +154,21 @@ end
 
 def pkcs12_equal?(a, b)
   Chef::Log.debug 'pkcs12_equal?'
-  Chef::Log.debug "a.key: #{OpenSSL::Digest.hexdigest('SHA256', a.key.to_s)}"
-  Chef::Log.debug "b.key: #{OpenSSL::Digest.hexdigest('SHA256', b.key.to_s)}"
+  Chef::Log.debug "a.key: #{::OpenSSL::Digest.hexdigest('SHA256', a.key.to_s)}"
+  Chef::Log.debug "b.key: #{::OpenSSL::Digest.hexdigest('SHA256', b.key.to_s)}"
   return false unless a.key.to_s == b.key.to_s
 
-  Chef::Log.debug "a.certificate: #{OpenSSL::Digest.hexdigest('SHA256', a.certificate.to_s)}"
-  Chef::Log.debug "b.certificate: #{OpenSSL::Digest.hexdigest('SHA256', b.certificate.to_s)}"
+  Chef::Log.debug "a.certificate: #{::OpenSSL::Digest.hexdigest('SHA256', a.certificate.to_s)}"
+  Chef::Log.debug "b.certificate: #{::OpenSSL::Digest.hexdigest('SHA256', b.certificate.to_s)}"
   return false unless a.certificate.to_s == b.certificate.to_s
 
   Chef::Log.debug "a.ca_certs.count: #{a.ca_certs.count}"
   Chef::Log.debug "b.ca_certs.count: #{b.ca_certs.count}"
   return false unless a.ca_certs.count == b.ca_certs.count
 
-  a_ca_certs_chksums = a.ca_certs.map { |c| OpenSSL::Digest.hexdigest('SHA256', c.to_s) }
+  a_ca_certs_chksums = a.ca_certs.map { |c| ::OpenSSL::Digest.hexdigest('SHA256', c.to_s) }
   Chef::Log.debug a_ca_certs_chksums
-  b_ca_certs_chksums = b.ca_certs.map { |c| OpenSSL::Digest.hexdigest('SHA256', c.to_s) }
+  b_ca_certs_chksums = b.ca_certs.map { |c| ::OpenSSL::Digest.hexdigest('SHA256', c.to_s) }
   Chef::Log.debug b_ca_certs_chksums
   return false unless (a_ca_certs_chksums & b_ca_certs_chksums) == a_ca_certs_chksums
 
