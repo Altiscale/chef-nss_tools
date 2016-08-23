@@ -37,13 +37,13 @@ def load_current_resource
   @current_resource.directory(@new_resource.directory)
   @current_resource.dbprefix(@new_resource.dbprefix)
 
-  @pkcs12file_new = Tempfile.new([@new_resource.name,'.p12'])
-  @pkcs12file_current = Tempfile.new([@current_resource.name,'.p12'])
+  @pkcs12file_new = Tempfile.new([@new_resource.name, '.p12'])
+  @pkcs12file_current = Tempfile.new([@current_resource.name, '.p12'])
 
   # Export the current db with name to a pkcs12 format for inspection
   ret = pk12util("-o #{@pkcs12file_current.path} -n '#{@current_resource.name}' -W '' -K ''",
-    @current_resource.directory,
-    @current_resource.dbprefix)[2]
+                 @current_resource.directory,
+                 @current_resource.dbprefix)[2]
 
   case ret
   when 255
@@ -110,12 +110,12 @@ end
 def load_new_pkcs12
   # Load new certificates
   if @new_resource.crt && @new_resource.key
-    Chef::Log.debug "Got PEM cert and key pair"
+    Chef::Log.debug 'Got PEM cert and key pair'
     Chef::Log.debug "CRT: #{@new_resource.crt}"
     Chef::Log.debug "KEY: #{@new_resource.key}"
 
     if @new_resource.ca
-      Chef::Log.debug "Also got CA certificate(s)"
+      Chef::Log.debug 'Also got CA certificate(s)'
 
       @new_resource.ca([@new_resource.ca]) unless @new_resource.ca.is_a? Array
 
@@ -131,15 +131,17 @@ def load_new_pkcs12
       end
 
       @pkcs12_new = ::OpenSSL::PKCS12.create '',
-        @new_resource.name,
-        ::OpenSSL::PKey.read(::File.open(@new_resource.key)),
-        ::OpenSSL::X509::Certificate.new(::File.read(@new_resource.crt)),
-        cas
+                                             @new_resource.name,
+                                             ::OpenSSL::PKey.read(::File.open(@new_resource.key)),
+                                             ::OpenSSL::X509::Certificate.new(
+                                               ::File.read(@new_resource.crt)),
+                                             cas
     else
       @pkcs12_new = ::OpenSSL::PKCS12.create '',
-        @new_resource.name,
-        ::OpenSSL::PKey.new(::File.read(@new_resource.key)),
-        ::OpenSSL::X509::Certificate.new(::File.read(@new_resource.crt))
+                                             @new_resource.name,
+                                             ::OpenSSL::PKey.new(::File.read(@new_resource.key)),
+                                             ::OpenSSL::X509::Certificate.new(
+                                               ::File.read(@new_resource.crt))
     end
   # Load new DER
   elsif @new_resource.der
@@ -151,18 +153,26 @@ def load_new_pkcs12
 end
 
 def pkcs12_equal?(a, b)
+  Chef::Log.debug 'pkcs12_equal?'
+  Chef::Log.debug "a.key: #{::OpenSSL::Digest.hexdigest('SHA256', a.key.to_s)}"
+  Chef::Log.debug "b.key: #{::OpenSSL::Digest.hexdigest('SHA256', b.key.to_s)}"
   return false unless a.key.to_s == b.key.to_s
+
+  Chef::Log.debug "a.certificate: #{::OpenSSL::Digest.hexdigest('SHA256', a.certificate.to_s)}"
+  Chef::Log.debug "b.certificate: #{::OpenSSL::Digest.hexdigest('SHA256', b.certificate.to_s)}"
   return false unless a.certificate.to_s == b.certificate.to_s
+
+  Chef::Log.debug "a.ca_certs.count: #{a.ca_certs.count}"
+  Chef::Log.debug "b.ca_certs.count: #{b.ca_certs.count}"
   return false unless a.ca_certs.count == b.ca_certs.count
 
-  a.ca_certs.each do |a_ca_cert|
-    found = false
-    b.ca_certs.each do |b_ca_cert|
-      if a_ca_cert.to_s == b_ca_cert.to_s
-        found = true
-        break
-      end
-    end
-    return false unless found
-  end
+  a_ca_certs_chksums = a.ca_certs.map { |c| ::OpenSSL::Digest.hexdigest('SHA256', c.to_s) }
+  Chef::Log.debug a_ca_certs_chksums
+  b_ca_certs_chksums = b.ca_certs.map { |c| ::OpenSSL::Digest.hexdigest('SHA256', c.to_s) }
+  Chef::Log.debug b_ca_certs_chksums
+  # Compare the intersection of the checksums of the array of ca certificates
+  # after checking that the number of ca certificates is the same
+  return false unless (a_ca_certs_chksums & b_ca_certs_chksums) == a_ca_certs_chksums
+
+  return true
 end
