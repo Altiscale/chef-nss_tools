@@ -170,6 +170,8 @@ def pkcs12_equal?(a, b)
   Chef::Log.debug a_ca_certs_chksums
   b_ca_certs_chksums = b.ca_certs.map { |c| ::OpenSSL::Digest.hexdigest('SHA256', c.to_s) }
   Chef::Log.debug b_ca_certs_chksums
+  # Compare the intersection of the checksums of the array of ca certificates
+  # after checking that the number of ca certificates is the same
   return false unless (a_ca_certs_chksums & b_ca_certs_chksums) == a_ca_certs_chksums
 
   return true
